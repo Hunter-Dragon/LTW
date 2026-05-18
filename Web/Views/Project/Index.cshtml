@@ -1,0 +1,93 @@
+@model IEnumerable<WebQuanLyDuAn.Models.Project>
+@using WebQuanLyDuAn.Models
+@{
+    ViewData["Title"] = "Danh sách dự án";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-folder me-2 text-primary"></i>Dự án</h4>
+    <a asp-action="Add" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Thêm dự án
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-folder-x fs-1"></i>
+        <p class="mt-3">Chưa có dự án nào. <a asp-action="Add">Thêm ngay!</a></p>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên dự án</th>
+                        <th>Người quản lý</th>
+                        <th>Bắt đầu</th>
+                        <th>Kết thúc</th>
+                        <th>Trạng thái</th>
+                        <th>Ưu tiên</th>
+                        <th class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-action="Display" asp-route-id="@p.Id"
+                                   class="fw-semibold text-decoration-none text-dark">
+                                    @p.Name
+                                </a>
+                            </td>
+                            <td><i class="bi bi-person text-muted me-1"></i>@(p.ManagerName ?? "—")</td>
+                            <td>@p.StartDate.ToString("dd/MM/yyyy")</td>
+                            <td>@(p.EndDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td>@Html.Raw(StatusBadge(p.Status))</td>
+                            <td>@Html.Raw(PriorityBadge(p.Priority))</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Display" asp-route-id="@p.Id"
+                                       class="btn btn-outline-secondary" title="Chi tiết">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Update" asp-route-id="@p.Id"
+                                       class="btn btn-outline-primary" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@p.Id"
+                                       class="btn btn-outline-danger" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@functions {
+    string StatusBadge(ProjectStatus s) => s switch
+    {
+        ProjectStatus.DangThucHien => "<span class='badge bg-primary'>Đang thực hiện</span>",
+        ProjectStatus.HoanThanh    => "<span class='badge bg-success'>Hoàn thành</span>",
+        ProjectStatus.TamDung      => "<span class='badge bg-warning text-dark'>Tạm dừng</span>",
+        ProjectStatus.DaHuy        => "<span class='badge bg-secondary'>Đã huỷ</span>",
+        _                          => "<span class='badge bg-light text-dark border'>Chưa bắt đầu</span>"
+    };
+
+    string PriorityBadge(PriorityLevel p) => p switch
+    {
+        PriorityLevel.KhanCap   => "<span class='badge bg-danger'>Khẩn cấp</span>",
+        PriorityLevel.Cao       => "<span class='badge bg-orange text-white'>Cao</span>",
+        PriorityLevel.TrungBinh => "<span class='badge bg-info text-dark'>Trung bình</span>",
+        _                       => "<span class='badge bg-light text-dark border'>Thấp</span>"
+    };
+}

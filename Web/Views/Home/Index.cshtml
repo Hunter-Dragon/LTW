@@ -1,0 +1,159 @@
+@using WebQuanLyDuAn.Models
+@{
+    ViewData["Title"] = "Tổng quan";
+    var recentProjects = ViewBag.RecentProjects as List<Project> ?? new();
+    var upcomingTasks  = ViewBag.UpcomingTasks  as List<ProjectTask> ?? new();
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-speedometer2 me-2 text-primary"></i>Tổng quan</h4>
+        <small class="text-muted">Cập nhật: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</small>
+    </div>
+</div>
+
+<!-- Stats cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-primary-soft text-primary mb-2">
+                    <i class="bi bi-folder2-open fs-4"></i>
+                </div>
+                <h3 class="fw-bold mb-0">@ViewBag.TotalProjects</h3>
+                <small class="text-muted">Tổng dự án</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-warning-soft text-warning mb-2">
+                    <i class="bi bi-arrow-repeat fs-4"></i>
+                </div>
+                <h3 class="fw-bold mb-0">@ViewBag.InProgress</h3>
+                <small class="text-muted">Đang thực hiện</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-success-soft text-success mb-2">
+                    <i class="bi bi-check2-circle fs-4"></i>
+                </div>
+                <h3 class="fw-bold mb-0">@ViewBag.Completed</h3>
+                <small class="text-muted">Hoàn thành</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-info-soft text-info mb-2">
+                    <i class="bi bi-list-task fs-4"></i>
+                </div>
+                <h3 class="fw-bold mb-0">@ViewBag.TotalTasks</h3>
+                <small class="text-muted">Tổng công việc</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Recent Projects -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Dự án gần đây</h6>
+                <a asp-controller="Project" asp-action="Index" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!recentProjects.Any())
+                {
+                    <div class="text-center text-muted py-4"><i class="bi bi-inbox fs-2"></i><br />Chưa có dự án nào</div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var p in recentProjects)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-start py-3">
+                                <div>
+                                    <a asp-controller="Project" asp-action="Display" asp-route-id="@p.Id"
+                                       class="fw-semibold text-decoration-none text-dark">@p.Name</a>
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-person me-1"></i>@(p.ManagerName ?? "—")
+                                        &nbsp;|&nbsp;
+                                        <i class="bi bi-calendar me-1"></i>@p.StartDate.ToString("dd/MM/yyyy")
+                                    </div>
+                                </div>
+                                @Html.Raw(StatusBadge(p.Status))
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Tasks -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-alarm me-2 text-danger"></i>Công việc sắp đến hạn</h6>
+                <a asp-controller="Task" asp-action="Index" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!upcomingTasks.Any())
+                {
+                    <div class="text-center text-muted py-4"><i class="bi bi-check2-all fs-2"></i><br />Không có công việc sắp đến hạn</div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var t in upcomingTasks)
+                        {
+                            var project = InMemoryDataStore.GetProject(t.ProjectId);
+                            var isOverdue = t.DueDate.HasValue && t.DueDate.Value < DateTime.Today;
+                            <li class="list-group-item d-flex justify-content-between align-items-start py-3">
+                                <div>
+                                    <a asp-controller="Task" asp-action="Display" asp-route-id="@t.Id"
+                                       class="fw-semibold text-decoration-none text-dark">@t.Title</a>
+                                    <div class="small @(isOverdue ? "text-danger" : "text-muted") mt-1">
+                                        <i class="bi bi-folder me-1"></i>@(project?.Name ?? "—")
+                                        &nbsp;|&nbsp;
+                                        <i class="bi bi-calendar-event me-1"></i>@(t.DueDate?.ToString("dd/MM/yyyy") ?? "—")
+                                        @if (isOverdue) { <span class="badge bg-danger ms-1">Quá hạn</span> }
+                                    </div>
+                                </div>
+                                @Html.Raw(WorkStatusBadge(t.Status))
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string StatusBadge(WebQuanLyDuAn.Models.ProjectStatus s) => s switch
+    {
+        WebQuanLyDuAn.Models.ProjectStatus.DangThucHien => "<span class='badge bg-primary'>Đang thực hiện</span>",
+        WebQuanLyDuAn.Models.ProjectStatus.HoanThanh    => "<span class='badge bg-success'>Hoàn thành</span>",
+        WebQuanLyDuAn.Models.ProjectStatus.TamDung      => "<span class='badge bg-warning text-dark'>Tạm dừng</span>",
+        WebQuanLyDuAn.Models.ProjectStatus.DaHuy        => "<span class='badge bg-secondary'>Đã huỷ</span>",
+        _                                                => "<span class='badge bg-light text-dark border'>Chưa bắt đầu</span>"
+    };
+
+    string WorkStatusBadge(WebQuanLyDuAn.Models.WorkStatus s) => s switch
+    {
+        WebQuanLyDuAn.Models.WorkStatus.DangLam   => "<span class='badge bg-primary'>Đang làm</span>",
+        WebQuanLyDuAn.Models.WorkStatus.HoanThanh => "<span class='badge bg-success'>Hoàn thành</span>",
+        WebQuanLyDuAn.Models.WorkStatus.BiChan    => "<span class='badge bg-danger'>Bị chặn</span>",
+        _                                          => "<span class='badge bg-light text-dark border'>Cần làm</span>"
+    };
+}
+
+@using WebQuanLyDuAn.Data

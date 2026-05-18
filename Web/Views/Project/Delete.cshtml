@@ -1,0 +1,47 @@
+@model WebQuanLyDuAn.Models.Project
+@{
+    ViewData["Title"] = "Xác nhận xóa";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger border-0 shadow-sm">
+            <div class="card-header bg-danger text-white py-3">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa dự án</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Cảnh báo:</strong> Xóa dự án sẽ <strong>xóa toàn bộ công việc</strong> liên quan. Hành động này không thể hoàn tác!
+                </div>
+
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td class="text-muted fw-semibold" width="140">Tên dự án</td>
+                        <td class="fw-bold">@Model.Name</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Người quản lý</td>
+                        <td>@(Model.ManagerName ?? "—")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Thời gian</td>
+                        <td>@Model.StartDate.ToString("dd/MM/yyyy") → @(Model.EndDate?.ToString("dd/MM/yyyy") ?? "?")</td>
+                    </tr>
+                </table>
+
+                <form asp-action="DeleteConfirmed" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-trash me-1"></i>Xóa dự án
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-arrow-left me-1"></i>Hủy bỏ
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

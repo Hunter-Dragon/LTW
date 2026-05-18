@@ -1,0 +1,94 @@
+@model WebQuanLyDuAn.Models.ProjectTask
+@using WebQuanLyDuAn.Models
+@{
+    ViewData["Title"] = Model.Title;
+    var project = ViewBag.Project as Project;
+    var isOverdue = Model.DueDate.HasValue
+                    && Model.DueDate.Value < DateTime.Today
+                    && Model.Status != WorkStatus.HoanThanh;
+}
+
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="fw-bold mb-0 flex-grow-1">@Model.Title</h4>
+    <a asp-action="Update" asp-route-id="@Model.Id" class="btn btn-sm btn-warning">
+        <i class="bi bi-pencil me-1"></i>Sửa
+    </a>
+    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-trash me-1"></i>Xóa
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 fw-semibold">
+                <i class="bi bi-card-text me-2 text-primary"></i>Chi tiết công việc
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted fw-semibold" width="150">Trạng thái</td>
+                        <td>@Html.Raw(WorkStatusBadge(Model.Status))</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Độ ưu tiên</td>
+                        <td>@Html.Raw(PriorityBadge(Model.Priority))</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Dự án</td>
+                        <td>
+                            @if (project != null)
+                            {
+                                <a asp-controller="Project" asp-action="Display" asp-route-id="@project.Id"
+                                   class="text-decoration-none">@project.Name</a>
+                            }
+                            else { <span>—</span> }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Người được giao</td>
+                        <td>@(Model.AssignedTo ?? "—")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Hạn hoàn thành</td>
+                        <td class="@(isOverdue ? "text-danger fw-bold" : "")">
+                            @(Model.DueDate?.ToString("dd/MM/yyyy") ?? "—")
+                            @if (isOverdue)
+                            {
+                                <span class="badge bg-danger ms-2">Quá hạn</span>
+                            }
+                        </td>
+                    </tr>
+                </table>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Description))
+                {
+                    <hr class="my-3" />
+                    <h6 class="fw-semibold text-muted">Mô tả</h6>
+                    <p class="mb-0">@Model.Description</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string WorkStatusBadge(WorkStatus s) => s switch
+    {
+        WorkStatus.DangLam   => "<span class='badge bg-primary'>Đang làm</span>",
+        WorkStatus.HoanThanh => "<span class='badge bg-success'>Hoàn thành</span>",
+        WorkStatus.BiChan    => "<span class='badge bg-danger'>Bị chặn</span>",
+        _                    => "<span class='badge bg-light text-dark border'>Cần làm</span>"
+    };
+
+    string PriorityBadge(PriorityLevel p) => p switch
+    {
+        PriorityLevel.KhanCap   => "<span class='badge bg-danger'>Khẩn cấp</span>",
+        PriorityLevel.Cao       => "<span class='badge bg-orange text-white'>Cao</span>",
+        PriorityLevel.TrungBinh => "<span class='badge bg-info text-dark'>Trung bình</span>",
+        _                       => "<span class='badge bg-light text-dark border'>Thấp</span>"
+    };
+}

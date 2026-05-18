@@ -1,0 +1,132 @@
+@model WebQuanLyDuAn.Models.Project
+@using WebQuanLyDuAn.Models
+@{
+    ViewData["Title"] = Model.Name;
+    var tasks = ViewBag.Tasks as List<ProjectTask> ?? new();
+}
+
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="fw-bold mb-0 flex-grow-1">@Model.Name</h4>
+    <a asp-action="Update" asp-route-id="@Model.Id" class="btn btn-sm btn-warning">
+        <i class="bi bi-pencil me-1"></i>Sửa
+    </a>
+    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-trash me-1"></i>Xóa
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Project info card -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold border-0">
+                <i class="bi bi-info-circle me-2 text-primary"></i>Thông tin dự án
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted" width="140">Trạng thái</td>
+                        <td>@Html.Raw(StatusBadge(Model.Status))</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Độ ưu tiên</td>
+                        <td>@Html.Raw(PriorityBadge(Model.Priority))</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Người quản lý</td>
+                        <td>@(Model.ManagerName ?? "—")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Ngày bắt đầu</td>
+                        <td>@Model.StartDate.ToString("dd/MM/yyyy")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Ngày kết thúc</td>
+                        <td>@(Model.EndDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                    </tr>
+                </table>
+                @if (!string.IsNullOrWhiteSpace(Model.Description))
+                {
+                    <hr class="my-2" />
+                    <p class="mb-0 text-secondary small">@Model.Description</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Task summary -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="bi bi-list-check me-2 text-primary"></i>Công việc (@tasks.Count)</span>
+                <a asp-controller="Task" asp-action="Add" asp-route-projectId="@Model.Id"
+                   class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Thêm công việc
+                </a>
+            </div>
+            <div class="card-body p-0">
+                @if (!tasks.Any())
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-2"></i><br />Chưa có công việc nào
+                    </div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var t in tasks)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <a asp-controller="Task" asp-action="Display" asp-route-id="@t.Id"
+                                       class="text-decoration-none text-dark fw-semibold small">@t.Title</a>
+                                    <div class="text-muted" style="font-size:.78rem">
+                                        @(t.AssignedTo ?? "Chưa giao") &nbsp;|&nbsp;
+                                        @(t.DueDate?.ToString("dd/MM/yyyy") ?? "Không có hạn")
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-1 align-items-center">
+                                    @Html.Raw(WorkStatusBadge(t.Status))
+                                    <a asp-controller="Task" asp-action="Update" asp-route-id="@t.Id"
+                                       class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1">
+                                        <i class="bi bi-pencil" style="font-size:.7rem"></i>
+                                    </a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string StatusBadge(ProjectStatus s) => s switch
+    {
+        ProjectStatus.DangThucHien => "<span class='badge bg-primary'>Đang thực hiện</span>",
+        ProjectStatus.HoanThanh    => "<span class='badge bg-success'>Hoàn thành</span>",
+        ProjectStatus.TamDung      => "<span class='badge bg-warning text-dark'>Tạm dừng</span>",
+        ProjectStatus.DaHuy        => "<span class='badge bg-secondary'>Đã huỷ</span>",
+        _                          => "<span class='badge bg-light text-dark border'>Chưa bắt đầu</span>"
+    };
+
+    string PriorityBadge(PriorityLevel p) => p switch
+    {
+        PriorityLevel.KhanCap   => "<span class='badge bg-danger'>Khẩn cấp</span>",
+        PriorityLevel.Cao       => "<span class='badge bg-orange text-white'>Cao</span>",
+        PriorityLevel.TrungBinh => "<span class='badge bg-info text-dark'>Trung bình</span>",
+        _                       => "<span class='badge bg-light text-dark border'>Thấp</span>"
+    };
+
+    string WorkStatusBadge(WorkStatus s) => s switch
+    {
+        WorkStatus.DangLam   => "<span class='badge bg-primary'>Đang làm</span>",
+        WorkStatus.HoanThanh => "<span class='badge bg-success'>Hoàn thành</span>",
+        WorkStatus.BiChan    => "<span class='badge bg-danger'>Bị chặn</span>",
+        _                    => "<span class='badge bg-light text-dark border'>Cần làm</span>"
+    };
+}

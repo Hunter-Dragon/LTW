@@ -1,0 +1,69 @@
+﻿/* ===== Quản Lý Dự Án – Custom Styles ===== */
+
+/* Soft background helpers for stat cards */
+.bg-primary-soft {
+    background-color: #dbeafe;
+}
+
+.bg-warning-soft {
+    background-color: #fef3c7;
+}
+
+.bg-success-soft {
+    background-color: #d1fae5;
+}
+
+.bg-info-soft {
+    background-color: #cffafe;
+}
+
+.bg-orange {
+    background-color: #f97316;
+}
+
+/* Stat card icon circle */
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+/* Stat card hover lift */
+.stat-card {
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1.25rem rgba(0,0,0,.1) !important;
+    }
+
+/* Overdue row tint */
+.table-danger-soft {
+    background-color: #fff5f5;
+}
+
+/* Tighter table rows */
+.table td, .table th {
+    vertical-align: middle;
+}
+
+/* Navbar active indicator */
+.navbar-nav .nav-link.active {
+    font-weight: 600;
+    border-bottom: 2px solid rgba(255,255,255,.7);
+}
+
+/* Card header cleanup */
+.card-header {
+    font-size: .95rem;
+}
+
+/* Footer */
+footer {
+    font-size: .85rem;
+}
