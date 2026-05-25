@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WebQuanLyDuAn.Data;
 using WebQuanLyDuAn.Models;
 
@@ -6,10 +7,17 @@ namespace WebQuanLyDuAn.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly AppDbContext _db;
+
+        public HomeController(AppDbContext db)
         {
-            var projects = InMemoryDataStore.Projects;
-            var tasks = InMemoryDataStore.Tasks;
+            _db = db;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var projects = await _db.Projects.ToListAsync();
+            var tasks = await _db.Tasks.ToListAsync();
 
             ViewBag.TotalProjects = projects.Count;
             ViewBag.TotalTasks = tasks.Count;

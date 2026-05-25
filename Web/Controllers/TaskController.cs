@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using WebQuanLyDuAn;
 using WebQuanLyDuAn.Data;
 using WebQuanLyDuAn.Models;
 
@@ -7,32 +9,42 @@ namespace WebQuanLyDuAn.Controllers
 {
     public class TaskController : Controller
     {
-        // GET: /Task  (hoặc /Task?projectId=1 để lọc theo dự án)
-        public IActionResult Index(int? projectId)
+        private readonly AppDbContext _db;
+
+        public TaskController(AppDbContext db)
         {
-            var tasks = projectId.HasValue
-                ? InMemoryDataStore.GetTasksByProject(projectId.Value)
-                : InMemoryDataStore.Tasks.OrderBy(t => t.DueDate).ToList();
+            _db = db;
+        }
+
+        // GET: /Task  hoặc /Task?projectId=1
+        public async Task<IActionResult> Index(int? projectId)
+        {
+            var query = _db.Tasks.AsQueryable();
+
+            if (projectId.HasValue)
+                query = query.Where(t => t.ProjectId == projectId.Value);
+
+            var tasks = await query.OrderBy(t => t.DueDate).ToListAsync();
 
             ViewBag.ProjectId = projectId;
-            ViewBag.Projects = InMemoryDataStore.Projects;
+            ViewBag.Projects = await _db.Projects.ToListAsync();
             return View(tasks);
         }
 
         // GET: /Task/Display/5
-        public IActionResult Display(int id)
+        public async Task<IActionResult> Display(int id)
         {
-            var task = InMemoryDataStore.GetTask(id);
+            var task = await _db.Tasks.FindAsync(id);
             if (task == null) return NotFound();
 
-            ViewBag.Project = InMemoryDataStore.GetProject(task.ProjectId);
+            ViewBag.Project = await _db.Projects.FindAsync(task.ProjectId);
             return View(task);
         }
 
         // GET: /Task/Add?projectId=1
-        public IActionResult Add(int? projectId)
+        public async Task<IActionResult> Add(int? projectId)
         {
-            LoadDropdowns(projectId);
+            await LoadDropdownsAsync(projectId);
             var model = new ProjectTask
             {
                 ProjectId = projectId ?? 0,
@@ -44,75 +56,82 @@ namespace WebQuanLyDuAn.Controllers
         // POST: /Task/Add
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Add(ProjectTask task)
+        public async Task<IActionResult> Add(ProjectTask task)
         {
             if (!ModelState.IsValid)
             {
-                LoadDropdowns(task.ProjectId);
+                await LoadDropdownsAsync(task.ProjectId);
                 return View(task);
             }
-            InMemoryDataStore.AddTask(task);
+            _db.Tasks.Add(task);
+            await _db.SaveChangesAsync();
             TempData["Success"] = $"Đã thêm công việc \"{task.Title}\" thành công!";
             return RedirectToAction(nameof(Index), new { projectId = task.ProjectId });
         }
 
         // GET: /Task/Update/5
-        public IActionResult Update(int id)
+        public async Task<IActionResult> Update(int id)
         {
-            var task = InMemoryDataStore.GetTask(id);
+            var task = await _db.Tasks.FindAsync(id);
             if (task == null) return NotFound();
-            LoadDropdowns(task.ProjectId);
+            await LoadDropdownsAsync(task.ProjectId);
             return View(task);
         }
 
         // POST: /Task/Update
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Update(ProjectTask task)
+        public async Task<IActionResult> Update(ProjectTask task)
         {
             if (!ModelState.IsValid)
             {
-                LoadDropdowns(task.ProjectId);
+                await LoadDropdownsAsync(task.ProjectId);
                 return View(task);
             }
-            InMemoryDataStore.UpdateTask(task);
+            _db.Tasks.Update(task);
+            await _db.SaveChangesAsync();
             TempData["Success"] = $"Đã cập nhật công việc \"{task.Title}\" thành công!";
             return RedirectToAction(nameof(Index), new { projectId = task.ProjectId });
         }
 
         // GET: /Task/Delete/5
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var task = InMemoryDataStore.GetTask(id);
+            var task = await _db.Tasks.FindAsync(id);
             if (task == null) return NotFound();
-            ViewBag.Project = InMemoryDataStore.GetProject(task.ProjectId);
+            ViewBag.Project = await _db.Projects.FindAsync(task.ProjectId);
             return View(task);
         }
 
         // POST: /Task/DeleteConfirmed
         [HttpPost, ActionName("DeleteConfirmed")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var task = InMemoryDataStore.GetTask(id);
-            var title = task?.Title ?? "";
-            var projectId = task?.ProjectId;
-            InMemoryDataStore.DeleteTask(id);
-            TempData["Success"] = $"Đã xóa công việc \"{title}\"!";
-            return RedirectToAction(nameof(Index), new { projectId });
+            var task = await _db.Tasks.FindAsync(id);
+            if (task != null)
+            {
+                var projectId = task.ProjectId;
+                _db.Tasks.Remove(task);
+                await _db.SaveChangesAsync();
+                TempData["Success"] = $"Đã xóa công việc \"{task.Title}\"!";
+                return RedirectToAction(nameof(Index), new { projectId });
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // ── helpers ─────────────────────────────────────────────────────────────
 
-        private void LoadDropdowns(int? selectedProjectId = null)
+        private async Task LoadDropdownsAsync(int? selectedProjectId = null)
         {
-            ViewBag.ProjectList = InMemoryDataStore.Projects
-                .Select(p => new SelectListItem
-                {
-                    Value = p.Id.ToString(),
-                    Text = p.Name,
-                    Selected = p.Id == selectedProjectId
-                });
+            var projects = await _db.Projects.ToListAsync();
+
+            ViewBag.ProjectList = projects.Select(p => new SelectListItem
+            {
+                Value = p.Id.ToString(),
+                Text = p.Name,
+                Selected = p.Id == selectedProjectId
+            });
 
             ViewBag.StatusList = Enum.GetValues<WorkStatus>()
                 .Select(s => new SelectListItem

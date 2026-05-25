@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using WebQuanLyDuAn;
 using WebQuanLyDuAn.Data;
 using WebQuanLyDuAn.Models;
 
@@ -7,22 +9,32 @@ namespace WebQuanLyDuAn.Controllers
 {
     public class ProjectController : Controller
     {
-        // GET: /Project
-        public IActionResult Index()
+        private readonly AppDbContext _db;
+
+        public ProjectController(AppDbContext db)
         {
-            var projects = InMemoryDataStore.Projects
+            _db = db;
+        }
+
+        // GET: /Project
+        public async Task<IActionResult> Index()
+        {
+            var projects = await _db.Projects
                 .OrderByDescending(p => p.StartDate)
-                .ToList();
+                .ToListAsync();
             return View(projects);
         }
 
         // GET: /Project/Display/5
-        public IActionResult Display(int id)
+        public async Task<IActionResult> Display(int id)
         {
-            var project = InMemoryDataStore.GetProject(id);
+            var project = await _db.Projects.FindAsync(id);
             if (project == null) return NotFound();
 
-            ViewBag.Tasks = InMemoryDataStore.GetTasksByProject(id);
+            ViewBag.Tasks = await _db.Tasks
+                .Where(t => t.ProjectId == id)
+                .ToListAsync();
+
             return View(project);
         }
 
@@ -36,46 +48,48 @@ namespace WebQuanLyDuAn.Controllers
         // POST: /Project/Add
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Add(Project project)
+        public async Task<IActionResult> Add(Project project)
         {
             if (!ModelState.IsValid)
             {
                 LoadDropdowns();
                 return View(project);
             }
-            InMemoryDataStore.AddProject(project);
+            _db.Projects.Add(project);
+            await _db.SaveChangesAsync();
             TempData["Success"] = $"Đã thêm dự án \"{project.Name}\" thành công!";
             return RedirectToAction(nameof(Index));
         }
 
         // GET: /Project/Update/5
-        public IActionResult Update(int id)
+        public async Task<IActionResult> Update(int id)
         {
-            var project = InMemoryDataStore.GetProject(id);
+            var project = await _db.Projects.FindAsync(id);
             if (project == null) return NotFound();
             LoadDropdowns();
             return View(project);
         }
 
-        // POST: /Project/Update/5
+        // POST: /Project/Update
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Update(Project project)
+        public async Task<IActionResult> Update(Project project)
         {
             if (!ModelState.IsValid)
             {
                 LoadDropdowns();
                 return View(project);
             }
-            InMemoryDataStore.UpdateProject(project);
+            _db.Projects.Update(project);
+            await _db.SaveChangesAsync();
             TempData["Success"] = $"Đã cập nhật dự án \"{project.Name}\" thành công!";
             return RedirectToAction(nameof(Index));
         }
 
         // GET: /Project/Delete/5
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var project = InMemoryDataStore.GetProject(id);
+            var project = await _db.Projects.FindAsync(id);
             if (project == null) return NotFound();
             return View(project);
         }
@@ -83,12 +97,15 @@ namespace WebQuanLyDuAn.Controllers
         // POST: /Project/DeleteConfirmed
         [HttpPost, ActionName("DeleteConfirmed")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var project = InMemoryDataStore.GetProject(id);
-            var name = project?.Name ?? "";
-            InMemoryDataStore.DeleteProject(id);
-            TempData["Success"] = $"Đã xóa dự án \"{name}\" và tất cả công việc liên quan!";
+            var project = await _db.Projects.FindAsync(id);
+            if (project != null)
+            {
+                _db.Projects.Remove(project); // Cascade xóa Tasks theo (cấu hình trong DbContext)
+                await _db.SaveChangesAsync();
+                TempData["Success"] = $"Đã xóa dự án \"{project.Name}\" và tất cả công việc liên quan!";
+            }
             return RedirectToAction(nameof(Index));
         }
 
